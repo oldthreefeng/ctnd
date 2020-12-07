@@ -94,7 +94,7 @@ jobs:
         shell: bash
         run: |
           uname -a && echo $GOARCH 
-          wget -c https://raw.githubusercontent.com/oldthreefeng/ctnd/containerd/main/Makefile.arm64 
+          wget -c https://raw.githubusercontent.com/oldthreefeng/ctnd/main/Makefile.arm64 
           make -f Makefile.arm64 build
           make -f Makefile.arm64 binaries
           rm bin/containerd-stress*
@@ -118,6 +118,7 @@ jobs:
           CGO_ENABLED: 1
           RUNC_FLAVOR: runc
         run: |
+          unset GOBIN
           if [[ "${OS}" == "linux" ]]; then
             sudo PATH=$PATH script/setup/install-seccomp
           fi
