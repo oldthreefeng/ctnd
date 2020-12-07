@@ -8,27 +8,10 @@ name: Containerd Release
 jobs:
   check:
     name: Check Signed Tag
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     timeout-minutes: 5
     outputs:
       stringver: ${{ steps.contentrel.outputs.stringver }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@master
-
-      - name: Prepare
-        id: prepare
-        run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          echo ::set-output name=tag_name::${TAG}
-
-      - name: Release content
-        id: contentrel
-        run: |
-          mkdir -p src/github.com/containerd/containerd/
-          cp Makefile.arm64 src/github.com/containerd/containerd/
-
 
     steps:
       - name: Checkout code
@@ -76,6 +59,9 @@ jobs:
           releasever=${{ github.ref }}
           releasever="${releasever#refs/tags/}"
           os=linux
+          [[ "${MOS}" =~ "windows" ]] && {
+            os=windows
+          }
           echo "RELEASE_VER=${releasever}" >> $GITHUB_ENV
           echo "GOPATH=${{ github.workspace }}" >> $GITHUB_ENV
           echo "OS=${os}" >> $GITHUB_ENV
@@ -87,14 +73,14 @@ jobs:
           repository: containerd/containerd
           ref: ${{ github.ref }}
           path: src/github.com/containerd/containerd
-
+       
 
       - name: Make
         shell: bash
         run: |
-          cp -f Makefile.arm64 Makefile
-          make build
-          make binaries
+          wget -c https://raw.githubusercontent.com/oldthreefeng/ctnd/main/Makefile.arm64 
+          make -f Makefile.arm64 build
+          make -f Makefile.arm64 binaries
           rm bin/containerd-stress*
           TARFILE="containerd-${RELEASE_VER#v}-${OS}-arm64.tar.gz"
           tar czf ${TARFILE} bin/
@@ -115,7 +101,7 @@ jobs:
           if [[ "${OS}" == "linux" ]]; then
             sudo PATH=$PATH script/setup/install-seccomp
           fi
-          make cri-cni-release
+          make -f Makefile.arm64 cri-cni-release
         working-directory: src/github.com/containerd/containerd
 
       - name: Save cri-containerd binaries
