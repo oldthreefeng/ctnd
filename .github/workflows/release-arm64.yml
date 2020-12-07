@@ -66,6 +66,16 @@ jobs:
           echo "GOPATH=${{ github.workspace }}" >> $GITHUB_ENV
           echo "OS=${os}" >> $GITHUB_ENV
           echo "${{ github.workspace }}/bin" >> $GITHUB_PATH
+          echo "GOARCH=arm64" >> $GITHUB_ENV
+      - name: Install dependencies
+        run: |
+          sudo add-apt-repository "deb [arch=arm64,s390x,ppc64el] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -sc) main" || true
+          sudo add-apt-repository "deb [arch=arm64,s390x,ppc64el] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -sc)-updates main" || true
+          sudo dpkg --add-architecture arm64
+          sudo apt-get update || true
+          sudo apt-get install -y \
+            crossbuild-essential-arm64 \
+            libseccomp-dev:arm64 \
 
       - name: Checkout containerd
         uses: actions/checkout@v2
@@ -76,9 +86,15 @@ jobs:
        
 
       - name: Make
+        env:
+          GOOS: linux
+          GOARCH: arm64
+          CC: aarch64-linux-gnu-gcc
+          CGO_ENABLED: 1
         shell: bash
         run: |
-          wget -c https://raw.githubusercontent.com/oldthreefeng/ctnd/main/Makefile.arm64 
+          uname -a && echo $GOARCH 
+          wget -c https://raw.githubusercontent.com/oldthreefeng/ctnd/containerd/main/Makefile.arm64 
           make -f Makefile.arm64 build
           make -f Makefile.arm64 binaries
           rm bin/containerd-stress*
@@ -96,6 +112,10 @@ jobs:
       - name: Make cri-containerd tar
         shell: bash
         env:
+          GOOS: linux
+          GOARCH: arm64
+          CC: aarch64-linux-gnu-gcc
+          CGO_ENABLED: 1
           RUNC_FLAVOR: runc
         run: |
           if [[ "${OS}" == "linux" ]]; then
